@@ -18,19 +18,22 @@ class FilmList(tk.Frame):
         col_num = 0
 
         for film in films:
-            film_frame = tk.Frame(film_container, bd=1, relief="solid", padx=10, pady=10)
+            film_frame = tk.Frame(film_container, bd=1, padx=50, pady=10)
             film_frame.grid(row=row_num, column=col_num, padx=10, pady=10, sticky="n")
-
+      
             # Załaduj i przeskaluj obraz
             if film['image']:  # jeśli ścieżka istnieje
                 try:
-                    img = Image.open(film['image'])
+                    img_data = getImage(film['image'])
+        
+                    # Otwórz obraz z danych binarnych
+                    img = Image.open(BytesIO(img_data))  # otwieramy obraz z binarnych danych
                 except:
                     img = Image.open("gui/okladka.png")  # fallback
             else:
                 img = Image.open("gui/okladka.png")
 
-            img = img.resize((64, 96))  # zmniejsz obraz
+            img = img.resize((100, 150))  # zmniejsz obraz
             photo = ImageTk.PhotoImage(img)
 
             image_label = tk.Label(film_frame, image=photo)
@@ -43,23 +46,26 @@ class FilmList(tk.Frame):
             tk.Label(film_frame, text=f"Data wydania: {film['releaseDate']}").grid(row=2, column=1, sticky="w")
             tk.Label(film_frame, text=f"Typ filmu: {film['movieType']}").grid(row=3, column=1, sticky="w")
             tk.Label(film_frame, text="Opis: " + film['description']).grid(row=4, column=1, sticky="w")
-            if film['actorList']:
-                tk.Label(film_frame, text="Aktorzy: " + ", ".join(film['actorList'])).grid(row=5, column=1, sticky="w")
-            else:
-                tk.Label(film_frame, text="Brak aktorów w obsadzie").grid(row=5, column=1, sticky="w")
-
-            # Przycisk Rezerwuj
-            reserve_button = tk.Button(
-                film_frame, text="Rezerwuj", bg="green", fg="white",
-                command=lambda f=film: controller.show_page("ReservationMaking", f['title'])
-            )
-            reserve_button.grid(row=6, column=1, pady=5, sticky="e")
+            actors = "Aktorzy: "
+            for id in film['actorIdList']['actorId']:
+                actor = getActor(id)
+                actors += actor['firstName'] + " " + actor['lastName'] + ", "
+            tk.Label(film_frame, text=actors, wraplength=200, justify="left").grid(row=5, column=1, sticky="w")
 
             # Ustawienie kolumny i rzędu
             col_num += 1
-            if col_num >= 2:
+            if col_num >= 3:
                 col_num = 0
-                row_num += 1
+                row_num += 2
 
-        tk.Button(self, text="Lista rezerwacji",
-                  command=lambda: controller.show_page("ReservationList")).pack(pady=20)
+        # tk.Button(self, text="Lista rezerwacji",
+        #           command=lambda: controller.show_page("ReservationList")).pack(pady=20)
+        # Dwa przyciski obok siebie na dole
+        button_frame = tk.Frame(self)
+        button_frame.pack(pady=10)
+
+        tk.Button(button_frame, text="Lista seansów",
+                  command=lambda: controller.show_page("ShowingList")).pack(side="left", padx=10)
+
+        tk.Button(button_frame, text="Lista rezerwacji",
+                  command=lambda: controller.show_page("ReservationList")).pack(side="left", padx=10)

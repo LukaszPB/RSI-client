@@ -2,7 +2,7 @@ import tkinter as tk
 from soap_comunication import *
 from PIL import Image, ImageTk  # użyj Pillow do skalowania zdjęć
 
-class ReservationMaking(tk.Frame):
+class ReservationUpdating(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.showing = None
@@ -44,8 +44,8 @@ class ReservationMaking(tk.Frame):
         button_frame = tk.Frame(self)
         button_frame.grid(row=8, column=0, columnspan=2, pady=10)
 
-        tk.Button(button_frame, text="zarezerwuj",
-                  command=lambda: self.send_reservation()).grid(row=0, column=1, padx=10)
+        tk.Button(button_frame, text="edytuj",
+                  command=lambda: self.update_reservation()).grid(row=0, column=1, padx=10)
 
         tk.Button(button_frame, text="Lista seansów",
                   command=lambda: controller.show_page("ShowingList")).grid(row=1, column=0, padx=10)
@@ -58,14 +58,26 @@ class ReservationMaking(tk.Frame):
 
     def set_data(self, value):
         self.selected_seats.clear()
+        self.selected_seats = [[item['x'], item['y']] for item in value['seatLocationList']['seatLocation']]
+        print(value)
+        self.reservation_id = value.reservationId
+
         value = getShowing(value.showingId)
 
         for row in self.seat_buttons:
             for button in row:
                 button.config(bg='lightgray')
-        
+
         seats_raw = value['seats']
         seats = [row['item'] for row in seats_raw]
+
+        for row in range(10):
+            for col in range(10):
+                if seats[row][col] > 0:
+                    self.seat_buttons[row][col].config(bg="red")
+
+        for row in self.selected_seats:
+            self.seat_buttons[row[0]][row[1]].config(bg='green')
       
         self.showing = value
         self.label.config(text=f"Rezerwujesz: {self.showing['movie']['title']}")
@@ -104,11 +116,6 @@ class ReservationMaking(tk.Frame):
             actors += actor['firstName'] + " " + actor['lastName'] + ", "
         tk.Label(self.film_frame, text=actors, wraplength=200, justify="left").grid(row=5, column=1, sticky="w")
 
-        for row in range(10):
-            for col in range(10):
-                if seats[row][col] > 0:
-                    self.seat_buttons[row][col].config(bg="red")
-
     def toggle_seat(self, row, col):
         btn = self.seat_buttons[row][col]
         current_color = btn.cget("bg")
@@ -126,8 +133,9 @@ class ReservationMaking(tk.Frame):
 
         print(self.selected_seats)
 
-    def send_reservation(self):
-        response = send_reservation(
+    def update_reservation(self):
+        response = update_reservation(
+            reservation_id=self.reservation_id,
             showing_id=self.showing.showingId,
             seat_list=self.selected_seats
         )
